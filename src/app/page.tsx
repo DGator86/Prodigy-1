@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { store } from '@/lib/store';
 import { WorkoutResult, getScoreLevel, getScoreLevelColor } from '@/types';
 import ScoreCard from '@/components/ScoreCard';
+import TrendLine from '@/components/ui/TrendLine';
 
 export default function Dashboard() {
   const [results, setResults] = useState<WorkoutResult[]>([]);
@@ -34,50 +35,71 @@ export default function Dashboard() {
     return store.getWorkout(workoutId)?.name ?? workoutId;
   }
 
+  const allResults = store.getResults(user.id);
+  const trendScores = allResults
+    .slice(0, 10)
+    .reverse()
+    .map((r) => r.overallPrivateScore);
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-white">
-          Welcome back, <span className="text-orange-500">{user.name.split(' ')[0]}</span>
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">
-          {user.bodyweightKg} kg · {user.sex} · {user.age}y
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-white">
+            Welcome back, <span className="text-orange-500">{user.name.split(' ')[0]}</span>
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            {user.bodyweightKg} kg · {user.sex} · {user.age}y
+          </p>
+        </div>
+        <Link href="/auth/login" className="text-gray-600 hover:text-gray-400 text-xs mt-1 transition-colors">
+          Sign in
+        </Link>
       </div>
 
       {/* Overall Score Hero */}
       <div className="bg-gradient-to-br from-orange-600/20 to-gray-900 rounded-2xl border border-orange-500/30 p-6">
-        <p className="text-gray-400 text-sm font-medium mb-1">Overall Score</p>
-        <div className={`text-6xl font-black ${getScoreLevelColor(avgScores.overallPrivateScore)}`}>
-          {avgScores.overallPrivateScore}
-          <span className="text-gray-600 text-2xl font-normal">/1000</span>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-gray-400 text-sm font-medium mb-1">Prodigy Score</p>
+            <div className={`text-6xl font-black ${getScoreLevelColor(avgScores.overallPrivateScore)}`}>
+              {avgScores.overallPrivateScore}
+              <span className="text-gray-600 text-2xl font-normal">/1000</span>
+            </div>
+            <p className={`font-bold text-lg mt-1 ${getScoreLevelColor(avgScores.overallPrivateScore)}`}>
+              {getScoreLevel(avgScores.overallPrivateScore)}
+            </p>
+            <p className="text-gray-500 text-xs mt-2">Average across all logged workouts</p>
+          </div>
+          {trendScores.length >= 2 && (
+            <div className="flex flex-col items-end gap-1">
+              <TrendLine scores={trendScores} width={100} height={40} />
+              <span className="text-gray-600 text-xs">last {trendScores.length}</span>
+            </div>
+          )}
         </div>
-        <p className={`font-bold text-lg mt-1 ${getScoreLevelColor(avgScores.overallPrivateScore)}`}>
-          {getScoreLevel(avgScores.overallPrivateScore)}
-        </p>
-        <p className="text-gray-500 text-xs mt-2">Average across all logged workouts</p>
+        <div className="mt-4 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all"
+            style={{ width: `${avgScores.overallPrivateScore / 10}%` }}
+          />
+        </div>
       </div>
 
       {/* Score Breakdown */}
-      <div className="grid grid-cols-3 gap-3">
-        <ScoreCard label="Physics" score={avgScores.physicsScore} />
-        <ScoreCard label="Capacity" score={avgScores.capacityScore} />
-        <ScoreCard label="Complexity" score={avgScores.complexityScore} />
+      <div className="grid grid-cols-2 gap-3">
+        <ScoreCard label="Output" score={avgScores.physicsScore} description="Power & work output" />
+        <ScoreCard label="Capacity" score={avgScores.capacityScore} description="Sustained endurance" />
+        <ScoreCard label="Skill" score={avgScores.complexityScore} description="Movement complexity" />
+        <ScoreCard label="Overall" score={avgScores.overallPrivateScore} large />
       </div>
 
       {/* Quick Actions */}
       <div className="flex gap-3">
-        <Link
-          href="/workouts"
-          className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-center py-3 rounded-xl font-semibold transition-colors"
-        >
+        <Link href="/workouts" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-center py-3 rounded-xl font-bold transition-colors">
           Log Workout
         </Link>
-        <Link
-          href="/workouts/new"
-          className="flex-1 bg-gray-900 hover:bg-gray-800 text-white text-center py-3 rounded-xl font-semibold border border-gray-800 transition-colors"
-        >
+        <Link href="/workouts/new" className="flex-1 bg-gray-900 hover:bg-gray-800 text-white text-center py-3 rounded-xl font-semibold border border-gray-800 transition-colors">
           Build Workout
         </Link>
       </div>
@@ -86,26 +108,18 @@ export default function Dashboard() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-bold">Recent Workouts</h2>
-          <Link href="/workouts" className="text-orange-400 text-sm hover:text-orange-300">
-            View all →
-          </Link>
+          <Link href="/workouts" className="text-orange-400 text-sm hover:text-orange-300">View all →</Link>
         </div>
-
         {results.length === 0 ? (
           <div className="bg-gray-900 rounded-xl border border-gray-800 p-8 text-center">
             <p className="text-gray-500">No workouts logged yet.</p>
-            <Link href="/workouts" className="text-orange-400 text-sm mt-2 block">
-              Log your first workout →
-            </Link>
+            <Link href="/workouts" className="text-orange-400 text-sm mt-2 block">Log your first workout →</Link>
           </div>
         ) : (
           <div className="space-y-2">
             {results.map((result) => (
-              <Link
-                key={result.id}
-                href={`/results/${result.id}`}
-                className="block bg-gray-900 rounded-xl border border-gray-800 hover:border-gray-700 p-4 transition-colors"
-              >
+              <Link key={result.id} href={`/results/${result.id}`}
+                className="block bg-gray-900 rounded-xl border border-gray-800 hover:border-gray-700 p-4 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-white font-semibold">{getWorkoutName(result.workoutId)}</p>
