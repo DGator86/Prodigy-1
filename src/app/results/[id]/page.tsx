@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { store } from '@/lib/store';
 import { WorkoutResult, getScoreLevel, getScoreLevelColor } from '@/types';
 import ScoreCard from '@/components/ScoreCard';
+import RadarChart from '@/components/ui/RadarChart';
 
 export default function ResultDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -63,6 +64,21 @@ export default function ResultDetailPage() {
           <div
             className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full"
             style={{ width: `${result.overallPrivateScore / 10}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Radar chart */}
+      <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <p className="text-gray-400 text-sm font-medium mb-3">Score Radar</p>
+        <div className="flex justify-center">
+          <RadarChart
+            current={[
+              { label: 'Physics', value: result.physicsScore },
+              { label: 'Capacity', value: result.capacityScore },
+              { label: 'Complexity', value: result.complexityScore },
+              { label: 'Overall', value: result.overallPrivateScore },
+            ]}
           />
         </div>
       </div>

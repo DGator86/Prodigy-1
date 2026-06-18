@@ -127,6 +127,7 @@ export interface Workout {
   movements: WorkoutMovement[];
   scoringMethod: ScoreType;
   timeCapSeconds?: number;
+  weightVestKg?: number;
   createdAt: string;
 }
 
@@ -144,6 +145,7 @@ export interface WorkoutResultInput {
     loadKg?: number;
     distanceMeters?: number;
   }[];
+  weightVestKg?: number;
 }
 
 export interface ScoreBreakdown {

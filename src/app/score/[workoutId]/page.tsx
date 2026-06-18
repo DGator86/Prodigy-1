@@ -37,7 +37,8 @@ export default function ScoreEntryPage() {
   function handleSave() {
     if (!workout) return;
     setSaving(true);
-    const result = store.addResult(workout.id, input);
+    const fullInput = { ...input, weightVestKg: workout.weightVestKg };
+    const result = store.addResult(workout.id, fullInput);
     router.push(`/results/${result.id}`);
   }
 
@@ -69,6 +70,11 @@ export default function ScoreEntryPage() {
           {workout.workoutType} · {workout.movements.length} movement{workout.movements.length !== 1 ? 's' : ''}
         </p>
         {workout.description && <p className="text-gray-400 text-sm mt-1">{workout.description}</p>}
+        {workout.weightVestKg && (
+          <span className="inline-block mt-2 bg-gray-800 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full">
+            Weight Vest: {workout.weightVestKg}kg
+          </span>
+        )}
       </div>
 
       {/* Input form */}
