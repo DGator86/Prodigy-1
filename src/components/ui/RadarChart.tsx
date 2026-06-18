@@ -8,7 +8,6 @@ interface RadarAxis {
 interface RadarChartProps {
   current: RadarAxis[];
   average?: RadarAxis[];
-  size?: number;
 }
 
 function polarToCartesian(cx: number, cy: number, r: number, angleRad: number) {
@@ -28,13 +27,16 @@ function buildPath(cx: number, cy: number, r: number, values: number[], max: num
   return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
 }
 
-export default function RadarChart({ current, average, size = 220 }: RadarChartProps) {
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size * 0.38;
+const SIZE = 260;
+const cx = SIZE / 2;
+const cy = SIZE / 2;
+const r = SIZE * 0.34;
+const LABEL_R = SIZE * 0.46;
+const max = 1000;
+const rings = [250, 500, 750, 1000];
+
+export default function RadarChart({ current, average }: RadarChartProps) {
   const n = current.length;
-  const max = 1000;
-  const rings = [200, 400, 600, 800, 1000];
 
   const spokePoints = current.map((_, i) => {
     const angle = (2 * Math.PI * i) / n;
@@ -43,69 +45,85 @@ export default function RadarChart({ current, average, size = 220 }: RadarChartP
 
   const labelPoints = current.map((_, i) => {
     const angle = (2 * Math.PI * i) / n;
-    return polarToCartesian(cx, cy, r * 1.2, angle);
+    return polarToCartesian(cx, cy, LABEL_R, angle);
   });
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg
+      viewBox={`0 0 ${SIZE} ${SIZE}`}
+      style={{ width: '100%', maxWidth: SIZE, height: 'auto', display: 'block' }}
+    >
       {/* Rings */}
       {rings.map((ring) => {
         const rr = (ring / max) * r;
-        const ringPoints = Array.from({ length: n }, (_, i) => {
+        const pts = Array.from({ length: n }, (_, i) => {
           const angle = (2 * Math.PI * i) / n;
           return polarToCartesian(cx, cy, rr, angle);
         });
-        const d = ringPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
-        return <path key={ring} d={d} fill="none" stroke="#374151" strokeWidth="1" />;
+        const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
+        return <path key={ring} d={d} fill="none" stroke="#1f2937" strokeWidth="1" />;
       })}
 
       {/* Spokes */}
       {spokePoints.map((pt, i) => (
-        <line key={i} x1={cx} y1={cy} x2={pt.x} y2={pt.y} stroke="#374151" strokeWidth="1" />
+        <line key={i} x1={cx} y1={cy} x2={pt.x} y2={pt.y} stroke="#1f2937" strokeWidth="1" />
       ))}
 
       {/* Average polygon */}
       {average && (
         <path
           d={buildPath(cx, cy, r, average.map((a) => a.value), max)}
-          fill="rgba(249,115,22,0.1)"
-          stroke="rgba(249,115,22,0.4)"
+          fill="rgba(249,115,22,0.08)"
+          stroke="rgba(249,115,22,0.35)"
           strokeWidth="1.5"
-          strokeDasharray="4 3"
+          strokeDasharray="5 3"
         />
       )}
 
       {/* Current polygon */}
       <path
         d={buildPath(cx, cy, r, current.map((a) => a.value), max)}
-        fill="rgba(249,115,22,0.2)"
+        fill="rgba(249,115,22,0.18)"
         stroke="rgb(249,115,22)"
         strokeWidth="2"
       />
 
-      {/* Dots on current */}
+      {/* Dots */}
       {current.map((a, i) => {
         const angle = (2 * Math.PI * i) / n;
         const pt = polarToCartesian(cx, cy, (a.value / max) * r, angle);
-        return <circle key={i} cx={pt.x} cy={pt.y} r="3.5" fill="rgb(249,115,22)" />;
+        return <circle key={i} cx={pt.x} cy={pt.y} r="4" fill="rgb(249,115,22)" />;
       })}
 
       {/* Labels */}
       {current.map((a, i) => {
         const pt = labelPoints[i];
         return (
-          <text
-            key={i}
-            x={pt.x}
-            y={pt.y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="#9ca3af"
-            fontSize="10"
-            fontWeight="600"
-          >
-            {a.label}
-          </text>
+          <g key={i}>
+            <text
+              x={pt.x}
+              y={pt.y - 5}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#9ca3af"
+              fontSize="9"
+              fontWeight="700"
+              letterSpacing="0.5"
+            >
+              {a.label.toUpperCase()}
+            </text>
+            <text
+              x={pt.x}
+              y={pt.y + 7}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#f97316"
+              fontSize="9"
+              fontWeight="600"
+            >
+              {a.value}
+            </text>
+          </g>
         );
       })}
     </svg>

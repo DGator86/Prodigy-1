@@ -5,8 +5,43 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { store } from '@/lib/store';
 import { WorkoutResult, getScoreLevel, getScoreLevelColor } from '@/types';
+import { MOVEMENTS } from '@/data/movements';
 import ScoreCard from '@/components/ScoreCard';
 import RadarChart from '@/components/ui/RadarChart';
+
+// Derive CrossFit base domain scores from what this specific workout tests.
+// Breakdown contributions tell us what fraction of work was loaded, bodyweight,
+// or locomotion — we use that to bias each domain score.
+function computeWorkoutDomains(result: WorkoutResult) {
+  let loadedFrac = 0, bodyweightFrac = 0, locomotionFrac = 0;
+  for (const b of result.scoreBreakdown) {
+    const m = MOVEMENTS.find((mv) => mv.name === b.movementName);
+    const f = b.contribution / 100;
+    if (m?.physicsModel === 'LoadedStrength') loadedFrac += f;
+    else if (m?.physicsModel === 'Bodyweight') bodyweightFrac += f;
+    else if (m?.physicsModel === 'Locomotion') locomotionFrac += f;
+  }
+  // If breakdown is empty, treat as balanced
+  if (loadedFrac + bodyweightFrac + locomotionFrac < 0.05) {
+    loadedFrac = bodyweightFrac = locomotionFrac = 0.33;
+  }
+
+  const p = result.physicsScore;
+  const cap = result.capacityScore;
+  const cplx = result.complexityScore;
+  return {
+    // Strength: how much raw force production (loaded barbell/KB work)
+    strength: Math.round(p * (0.3 + loadedFrac * 0.7)),
+    // Power: explosive short-effort output (loaded + bodyweight, penalised by locomotion)
+    power: Math.round(p * (0.4 + (loadedFrac + bodyweightFrac * 0.5) * 0.6)),
+    // Endurance: sustained aerobic capacity (boosted by running/rowing/cycling)
+    endurance: Math.round(cap * (0.3 + locomotionFrac * 0.5 + (1 - loadedFrac) * 0.2)),
+    // Skill: gymnastics/technical movement quality
+    skill: Math.round(cplx * (0.3 + bodyweightFrac * 0.7)),
+    // Conditioning: overall metabolic fitness
+    conditioning: result.overallPrivateScore,
+  };
+}
 
 export default function ResultDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -68,20 +103,25 @@ export default function ResultDetailPage() {
         </div>
       </div>
 
-      {/* Radar chart */}
-      <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <p className="text-gray-400 text-sm font-medium mb-3">Score Radar</p>
-        <div className="flex justify-center">
-          <RadarChart
-            current={[
-              { label: 'Physics', value: result.physicsScore },
-              { label: 'Capacity', value: result.capacityScore },
-              { label: 'Complexity', value: result.complexityScore },
-              { label: 'Overall', value: result.overallPrivateScore },
-            ]}
-          />
-        </div>
-      </div>
+      {/* Radar chart — CrossFit domains tested by this workout */}
+      {(() => {
+        const d = computeWorkoutDomains(result);
+        return (
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+            <p className="text-white font-semibold mb-1">Workout Domains</p>
+            <p className="text-gray-500 text-xs mb-4">CrossFit base aspects tested by this workout</p>
+            <RadarChart
+              current={[
+                { label: 'Strength', value: d.strength },
+                { label: 'Power', value: d.power },
+                { label: 'Endurance', value: d.endurance },
+                { label: 'Skill', value: d.skill },
+                { label: 'Conditioning', value: d.conditioning },
+              ]}
+            />
+          </div>
+        );
+      })()}
 
       {/* Score breakdown */}
       <div className="grid grid-cols-3 gap-3">
