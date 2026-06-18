@@ -127,6 +127,7 @@ export interface Workout {
   movements: WorkoutMovement[];
   scoringMethod: ScoreType;
   timeCapSeconds?: number;
+  weightVestKg?: number;
   createdAt: string;
 }
 
@@ -144,6 +145,7 @@ export interface WorkoutResultInput {
     loadKg?: number;
     distanceMeters?: number;
   }[];
+  weightVestKg?: number;
 }
 
 export interface ScoreBreakdown {
@@ -167,14 +169,6 @@ export interface WorkoutResult {
   rawPowerWatts: number;
   scoreBreakdown: ScoreBreakdown[];
   completedAt: string;
-  // New fields (from new engine)
-  outputScore?: number;
-  skillScore?: number;
-  progressionScore?: number;
-  prodigyScore?: number;
-  rxStatus?: 'rx' | 'scaled' | 'modified';
-  dnf?: boolean;
-  timeCapHit?: boolean;
 }
 
 export type ScoreLevel =

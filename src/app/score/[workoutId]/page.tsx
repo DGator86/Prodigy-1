@@ -4,28 +4,52 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { store } from '@/lib/store';
 import { Workout, WorkoutResultInput } from '@/types';
+import { calculateScore } from '@/lib/scoring';
 import ScoreCard from '@/components/ScoreCard';
-
-type RxStatus = 'rx' | 'scaled' | 'modified';
 
 export default function ScoreEntryPage() {
   const { workoutId } = useParams<{ workoutId: string }>();
   const router = useRouter();
 
   const [workout, setWorkout] = useState<Workout | null>(null);
-  const [input, setInput] = useState<WorkoutResultInput & { rxStatus?: RxStatus; dnf?: boolean; timeCapHit?: boolean }>({});
-  const [rxStatus, setRxStatus] = useState<RxStatus>('rx');
-  const [dnf, setDnf] = useState(false);
-  const [timeCapHit, setTimeCapHit] = useState(false);
-  const [preview, setPreview] = useState<ReturnType<typeof store.addResult> | null>(null);
-  const [previewScores, setPreviewScores] = useState<{ output: number; capacity: number; skill: number; prodigy: number } | null>(null);
+  const [input, setInput] = useState<WorkoutResultInput>({});
+  const [preview, setPreview] = useState<ReturnType<typeof calculateScore> | null>(null);
   const [saving, setSaving] = useState(false);
-  const [timeInput, setTimeInput] = useState('');
+
+  const user = store.getUser();
 
   useEffect(() => {
     const w = store.getWorkout(workoutId);
     setWorkout(w ?? null);
   }, [workoutId]);
+
+  function updateInput<K extends keyof WorkoutResultInput>(key: K, value: WorkoutResultInput[K]) {
+    setInput((prev) => ({ ...prev, [key]: value }));
+    setPreview(null);
+  }
+
+  function handleCalculate() {
+    if (!workout) return;
+    const scored = calculateScore({ workout, input, user });
+    setPreview(scored);
+  }
+
+  function handleSave() {
+    if (!workout) return;
+    setSaving(true);
+    const fullInput = { ...input, weightVestKg: workout.weightVestKg };
+    const result = store.addResult(workout.id, fullInput);
+    router.push(`/results/${result.id}`);
+  }
+
+  if (!workout) {
+    return <div className="text-gray-500 text-center py-16">Workout not found.</div>;
+  }
+
+  const isForTime = workout.workoutType === 'ForTime' || workout.workoutType === 'Chipper';
+  const isAMRAP = workout.workoutType === 'AMRAP' || workout.workoutType === 'EMOM';
+  const isMaxLoad = workout.workoutType === 'MaxLoad';
+  const isMaxReps = workout.workoutType === 'MaxReps';
 
   function parseTime(mmss: string): number | undefined {
     const parts = mmss.split(':');
@@ -38,38 +62,6 @@ export default function ScoreEntryPage() {
     return isNaN(secs) ? undefined : secs;
   }
 
-  function updateInput<K extends keyof WorkoutResultInput>(key: K, value: WorkoutResultInput[K]) {
-    setInput((prev) => ({ ...prev, [key]: value }));
-    setPreview(null);
-    setPreviewScores(null);
-  }
-
-  function handleCalculate() {
-    if (!workout) return;
-    const fullInput = { ...input, rxStatus, dnf, timeCapHit };
-    // We don't want to save yet — just calculate. Clone store logic.
-    const tempResult = store.addResult(workout.id, fullInput);
-    setPreview(tempResult);
-    setPreviewScores({
-      output: tempResult.outputScore ?? tempResult.physicsScore,
-      capacity: tempResult.capacityScore,
-      skill: tempResult.skillScore ?? tempResult.complexityScore,
-      prodigy: tempResult.prodigyScore ?? tempResult.overallPrivateScore,
-    });
-    // Remove from store since this was a preview — it was saved to in-memory store.
-    // We'll just navigate to the result after Save.
-    router.push(`/results/${tempResult.id}`);
-  }
-
-  if (!workout) {
-    return <div className="text-gray-500 text-center py-16">Workout not found.</div>;
-  }
-
-  const isForTime = workout.workoutType === 'ForTime' || workout.workoutType === 'Chipper';
-  const isAMRAP = workout.workoutType === 'AMRAP' || workout.workoutType === 'EMOM';
-  const isMaxLoad = workout.workoutType === 'MaxLoad';
-  const isMaxReps = workout.workoutType === 'MaxReps';
-
   return (
     <div className="space-y-5 max-w-md">
       <div>
@@ -78,79 +70,25 @@ export default function ScoreEntryPage() {
           {workout.workoutType} · {workout.movements.length} movement{workout.movements.length !== 1 ? 's' : ''}
         </p>
         {workout.description && <p className="text-gray-400 text-sm mt-1">{workout.description}</p>}
-      </div>
-
-      {/* RX / Scaled / Modified toggle */}
-      <div>
-        <label className="block text-gray-400 text-sm mb-1.5">RX Status</label>
-        <div className="flex gap-2">
-          {(['rx', 'scaled', 'modified'] as RxStatus[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setRxStatus(s)}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-colors ${
-                rxStatus === s
-                  ? s === 'rx' ? 'bg-green-600 border-green-600 text-white'
-                    : s === 'scaled' ? 'bg-yellow-600 border-yellow-600 text-white'
-                    : 'bg-gray-600 border-gray-600 text-white'
-                  : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-white'
-              }`}
-            >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-        </div>
+        {workout.weightVestKg && (
+          <span className="inline-block mt-2 bg-gray-800 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full">
+            Weight Vest: {workout.weightVestKg}kg
+          </span>
+        )}
       </div>
 
       {/* Input form */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5 space-y-4">
         <h2 className="text-white font-semibold">Enter Your Score</h2>
 
-        {isForTime && !dnf && (
+        {isForTime && (
           <div>
-            <label className="block text-gray-400 text-sm mb-1.5">Time (MM:SS or seconds)</label>
+            <label className="block text-gray-400 text-sm mb-1.5">Time (MM:SS)</label>
             <input
               type="text"
               placeholder="4:30"
-              value={timeInput}
-              onChange={(e) => {
-                setTimeInput(e.target.value);
-                updateInput('timeSeconds', parseTime(e.target.value));
-              }}
+              onChange={(e) => updateInput('timeSeconds', parseTime(e.target.value))}
               className="w-full bg-gray-800 rounded-xl px-4 py-3 text-white text-xl font-bold placeholder-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
-            />
-          </div>
-        )}
-
-        {isForTime && (
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setDnf(!dnf); setTimeCapHit(false); }}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-colors ${
-                dnf ? 'bg-red-600 border-red-600 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
-              }`}
-            >
-              DNF
-            </button>
-            <button
-              onClick={() => { setTimeCapHit(!timeCapHit); setDnf(false); }}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-colors ${
-                timeCapHit ? 'bg-orange-600 border-orange-600 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
-              }`}
-            >
-              Time Cap
-            </button>
-          </div>
-        )}
-
-        {timeCapHit && (
-          <div>
-            <label className="block text-gray-400 text-sm mb-1.5">Reps completed at time cap</label>
-            <input
-              type="number"
-              placeholder="0"
-              onChange={(e) => updateInput('reps', e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full bg-gray-800 rounded-xl px-4 py-3 text-white text-xl font-bold placeholder-gray-700 focus:outline-none"
             />
           </div>
         )}
@@ -202,24 +140,55 @@ export default function ScoreEntryPage() {
           </div>
         )}
 
-        {/* Notes */}
-        <div>
-          <label className="block text-gray-400 text-sm mb-1.5">Notes (optional)</label>
-          <textarea
-            placeholder="How did it feel?"
-            rows={2}
-            className="w-full bg-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-700 focus:outline-none resize-none text-sm"
-          />
-        </div>
-
         <button
           onClick={handleCalculate}
-          disabled={saving}
-          className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white py-3.5 rounded-xl font-bold transition-colors"
+          className="w-full py-3 border border-orange-500 text-orange-400 hover:bg-orange-500/10 rounded-xl font-semibold transition-colors"
         >
-          {saving ? 'Saving...' : 'Calculate & Save'}
+          Calculate Score
         </button>
       </div>
+
+      {/* Preview */}
+      {preview && (
+        <div className="space-y-4">
+          {/* Public score */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-5 text-center">
+            <p className="text-gray-400 text-sm">Whiteboard Score</p>
+            <p className="text-4xl font-black text-white mt-1">{preview.publicWhiteboardScore}</p>
+          </div>
+
+          {/* Private scores */}
+          <div className="grid grid-cols-2 gap-3">
+            <ScoreCard label="Physics" score={preview.physicsScore} />
+            <ScoreCard label="Capacity" score={preview.capacityScore} />
+            <ScoreCard label="Complexity" score={preview.complexityScore} />
+            <ScoreCard label="Overall" score={preview.overallPrivateScore} />
+          </div>
+
+          {/* Mechanics */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+            <p className="text-gray-500 text-xs mb-2">Raw Physics</p>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Work Output</span>
+              <span className="text-white font-medium">
+                {(preview.rawWorkJoules / 1000).toFixed(1)} kJ
+              </span>
+            </div>
+            <div className="flex justify-between text-sm mt-1">
+              <span className="text-gray-400">Avg Power</span>
+              <span className="text-white font-medium">{preview.rawPowerWatts} W</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white py-3.5 rounded-xl font-bold transition-colors"
+          >
+            {saving ? 'Saving...' : 'Save Result'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

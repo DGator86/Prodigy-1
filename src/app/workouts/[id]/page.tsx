@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { store } from '@/lib/store';
-import { Workout, WorkoutResult, getScoreLevelColor } from '@/types';
-import { MOVEMENTS } from '@/data/seed/movements';
+import { Workout, WorkoutResult } from '@/types';
+import { MOVEMENTS } from '@/data/movements';
+import WorkoutCard from '@/components/WorkoutCard';
 
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,100 +16,74 @@ export default function WorkoutDetailPage() {
   useEffect(() => {
     const w = store.getWorkout(id);
     setWorkout(w ?? null);
-    if (w) {
-      const user = store.getUser();
-      setResults(store.getResultsForWorkout(id, user.id));
-    }
+    setResults(store.getResults().filter((r) => r.workoutId === id));
   }, [id]);
 
   if (!workout) {
     return <div className="text-gray-500 text-center py-16">Workout not found.</div>;
   }
 
-  const personalBest = results.length > 0
-    ? Math.max(...results.map((r) => r.prodigyScore ?? r.overallPrivateScore))
-    : null;
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  const uniqueMovements = [...new Map(workout.movements.map((m) => [m.movementId, m])).values()];
 
   return (
-    <div className="space-y-5 max-w-md">
+    <div className="space-y-5 max-w-xl">
       <div>
-        <Link href="/workouts" className="text-gray-500 hover:text-gray-300 text-sm">← Back</Link>
-        <h1 className="text-2xl font-black text-white mt-2">{workout.name}</h1>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="bg-orange-500/20 text-orange-400 text-xs font-medium px-2 py-0.5 rounded">
-            {workout.workoutType}
-          </span>
-          {(workout as any).is_benchmark && (
-            <span className="bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded">Benchmark</span>
-          )}
-        </div>
-        {workout.description && <p className="text-gray-400 text-sm mt-2">{workout.description}</p>}
+        <h1 className="text-2xl font-black text-white">{workout.name}</h1>
+        {workout.description && <p className="text-gray-400 text-sm mt-1">{workout.description}</p>}
       </div>
 
       {/* Movements */}
-      <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <h2 className="text-white font-semibold mb-3">Movements</h2>
-        <div className="space-y-2">
-          {workout.movements.map((wm, i) => {
-            const movement = MOVEMENTS.find((m) => m.id === wm.movementId);
-            return (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <span className="text-white">{movement?.name ?? wm.movementId}</span>
-                <span className="text-gray-500">
-                  {wm.reps ? `${wm.reps} reps` : ''}
-                  {wm.loadKg ? ` @ ${wm.loadKg}kg` : ''}
-                  {wm.distanceMeters ? `${wm.distanceMeters}m` : ''}
-                  {wm.calories ? `${wm.calories} cal` : ''}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+      <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 space-y-2">
+        {workout.movements.map((wm, idx) => {
+          const movement = MOVEMENTS.find((m) => m.id === wm.movementId);
+          return (
+            <div key={idx} className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0">
+              <span className="text-white font-medium">{movement?.name ?? wm.movementId}</span>
+              <span className="text-gray-400 text-sm">
+                {wm.reps && `${wm.reps} reps`}
+                {wm.loadKg && ` @ ${wm.loadKg} kg`}
+                {wm.distanceMeters && `${wm.distanceMeters} m`}
+                {wm.calories && `${wm.calories} cal`}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Stats */}
-      {personalBest !== null && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <h2 className="text-white font-semibold mb-3">Your Stats</h2>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400 text-sm">Personal Best</span>
-            <span className={`font-bold ${getScoreLevelColor(personalBest)}`}>{personalBest}/1000</span>
-          </div>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-gray-400 text-sm">Total Attempts</span>
-            <span className="text-white font-medium">{results.length}</span>
-          </div>
-        </div>
-      )}
+      <Link
+        href={`/score/${workout.id}`}
+        className="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white py-3.5 rounded-xl font-bold transition-colors"
+      >
+        Log Score
+      </Link>
 
-      {/* Recent results */}
+      {/* History */}
       {results.length > 0 && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <h2 className="text-white font-semibold mb-3">Previous Results</h2>
+        <div>
+          <h2 className="text-white font-bold mb-3">Score History</h2>
           <div className="space-y-2">
-            {results.slice(0, 5).map((r) => (
-              <Link key={r.id} href={`/results/${r.id}`}
-                className="flex items-center justify-between text-sm hover:text-orange-400 transition-colors">
-                <span className="text-gray-500">
-                  {new Date(r.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-400">{r.publicWhiteboardScore}</span>
-                  <span className={`font-bold ${getScoreLevelColor(r.prodigyScore ?? r.overallPrivateScore)}`}>
-                    {r.prodigyScore ?? r.overallPrivateScore}
-                  </span>
+            {results.map((r) => (
+              <Link
+                key={r.id}
+                href={`/results/${r.id}`}
+                className="block bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-colors"
+              >
+                <div className="flex justify-between">
+                  <div>
+                    <p className="text-orange-400 font-bold">{r.publicWhiteboardScore}</p>
+                    <p className="text-gray-500 text-xs">{formatDate(r.completedAt)}</p>
+                  </div>
+                  <p className="text-green-400 font-bold">{r.overallPrivateScore}/1000</p>
                 </div>
               </Link>
             ))}
           </div>
         </div>
       )}
-
-      {/* CTA */}
-      <Link href={`/score/${workout.id}`}
-        className="block w-full text-center py-4 bg-orange-500 hover:bg-orange-600 rounded-xl text-white font-bold transition-colors">
-        Log Score
-      </Link>
     </div>
   );
 }

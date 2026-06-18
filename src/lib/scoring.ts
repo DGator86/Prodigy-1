@@ -239,7 +239,7 @@ export function calculateScore(params: {
       timeSeconds: movTime,
       calories: cals,
       watts,
-      bodyweightKg: user.bodyweightKg,
+      bodyweightKg: user.bodyweightKg + (input.weightVestKg ?? workout.weightVestKg ?? 0),
     });
 
     totalWorkJoules += workJ;

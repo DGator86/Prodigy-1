@@ -37,6 +37,7 @@ export default function NewWorkoutPage() {
   const [description, setDescription] = useState('');
   const [timeCap, setTimeCap] = useState('');
   const [movements, setMovements] = useState<MovementRow[]>([]);
+  const [weightVestKg, setWeightVestKg] = useState<number | undefined>();
   const [movementSearch, setMovementSearch] = useState('');
   const [showMovementPicker, setShowMovementPicker] = useState(false);
 
@@ -74,6 +75,7 @@ export default function NewWorkoutPage() {
       movements: movements.map(({ key: _key, ...m }) => m),
       scoringMethod: SCORING_BY_TYPE[type],
       timeCapSeconds: timeCap ? parseInt(timeCap) * 60 : undefined,
+      weightVestKg,
     });
     router.push('/workouts');
   }
@@ -141,6 +143,18 @@ export default function NewWorkoutPage() {
           placeholder="Describe the workout..."
           rows={2}
           className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-orange-500 resize-none"
+        />
+      </div>
+
+      {/* Weight Vest */}
+      <div>
+        <label className="block text-gray-400 text-sm mb-1.5">Weight Vest (optional)</label>
+        <input
+          type="number"
+          value={weightVestKg ?? ''}
+          onChange={(e) => setWeightVestKg(e.target.value ? Number(e.target.value) : undefined)}
+          placeholder="kg (leave blank if none)"
+          className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-orange-500"
         />
       </div>
 
@@ -266,17 +280,45 @@ export default function NewWorkoutPage() {
               placeholder="Search..."
               className="bg-gray-800 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none mb-3"
             />
-            <div className="overflow-y-auto space-y-1 flex-1">
-              {filteredMovements.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => addMovement(m.id)}
-                  className="w-full text-left px-4 py-2.5 rounded-lg text-white hover:bg-gray-800 transition-colors flex justify-between items-center"
-                >
-                  <span>{m.name}</span>
-                  <span className="text-gray-600 text-xs">{m.movementFamily}</span>
-                </button>
-              ))}
+            <div className="overflow-y-auto flex-1">
+              {movementSearch.trim() ? (
+                <div className="space-y-1">
+                  {filteredMovements.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => addMovement(m.id)}
+                      className="w-full text-left px-4 py-2.5 rounded-lg text-white hover:bg-gray-800 transition-colors flex justify-between items-center"
+                    >
+                      <span>{m.name}</span>
+                      <span className="text-gray-600 text-xs">{m.movementFamily}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(
+                    MOVEMENTS.reduce<Record<string, typeof MOVEMENTS>>((acc, m) => {
+                      (acc[m.movementFamily] ??= []).push(m);
+                      return acc;
+                    }, {})
+                  ).map(([family, moves]) => (
+                    <div key={family}>
+                      <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider px-1 mb-1">{family}</p>
+                      <div className="space-y-0.5">
+                        {moves.map((m) => (
+                          <button
+                            key={m.id}
+                            onClick={() => addMovement(m.id)}
+                            className="w-full text-left px-4 py-2 rounded-lg text-white hover:bg-gray-800 transition-colors text-sm"
+                          >
+                            {m.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

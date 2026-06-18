@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: '⚡' },
   { href: '/movements', label: 'Movements', icon: '🏋️' },
   { href: '/workouts', label: 'Workouts', icon: '📋' },
+  { href: '/settings', label: 'Settings', icon: '⚙' },
 ];
 
 export default function Navigation() {
