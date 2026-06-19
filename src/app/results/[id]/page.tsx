@@ -116,7 +116,7 @@ export default function ResultDetailPage() {
                 { label: 'Power', value: d.power },
                 { label: 'Endurance', value: d.endurance },
                 { label: 'Skill', value: d.skill },
-                { label: 'Conditioning', value: d.conditioning },
+                { label: 'Fitness', value: d.conditioning },
               ]}
             />
           </div>

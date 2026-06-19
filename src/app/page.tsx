@@ -118,7 +118,7 @@ export default function Dashboard() {
               { label: 'Power', value: profile.power },
               { label: 'Endurance', value: profile.endurance },
               { label: 'Skill', value: profile.skill },
-              { label: 'Conditioning', value: profile.conditioning },
+              { label: 'Fitness', value: profile.conditioning },
             ]}
           />
         </div>

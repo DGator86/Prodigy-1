@@ -27,26 +27,27 @@ function buildPath(cx: number, cy: number, r: number, values: number[], max: num
   return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
 }
 
-const SIZE = 260;
+// Viewbox has 40px padding on each side so labels never clip
+const PAD = 44;
+const INNER = 200;
+const SIZE = INNER + PAD * 2;
 const cx = SIZE / 2;
 const cy = SIZE / 2;
-const r = SIZE * 0.34;
-const LABEL_R = SIZE * 0.46;
+const r = INNER * 0.42;
+const LABEL_R = r + 28;
 const max = 1000;
 const rings = [250, 500, 750, 1000];
 
 export default function RadarChart({ current, average }: RadarChartProps) {
   const n = current.length;
 
-  const spokePoints = current.map((_, i) => {
-    const angle = (2 * Math.PI * i) / n;
-    return polarToCartesian(cx, cy, r, angle);
-  });
+  const spokePoints = current.map((_, i) =>
+    polarToCartesian(cx, cy, r, (2 * Math.PI * i) / n)
+  );
 
-  const labelPoints = current.map((_, i) => {
-    const angle = (2 * Math.PI * i) / n;
-    return polarToCartesian(cx, cy, LABEL_R, angle);
-  });
+  const labelPoints = current.map((_, i) =>
+    polarToCartesian(cx, cy, LABEL_R, (2 * Math.PI * i) / n)
+  );
 
   return (
     <svg
@@ -56,10 +57,9 @@ export default function RadarChart({ current, average }: RadarChartProps) {
       {/* Rings */}
       {rings.map((ring) => {
         const rr = (ring / max) * r;
-        const pts = Array.from({ length: n }, (_, i) => {
-          const angle = (2 * Math.PI * i) / n;
-          return polarToCartesian(cx, cy, rr, angle);
-        });
+        const pts = Array.from({ length: n }, (_, i) =>
+          polarToCartesian(cx, cy, rr, (2 * Math.PI * i) / n)
+        );
         const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
         return <path key={ring} d={d} fill="none" stroke="#1f2937" strokeWidth="1" />;
       })}
@@ -102,19 +102,19 @@ export default function RadarChart({ current, average }: RadarChartProps) {
           <g key={i}>
             <text
               x={pt.x}
-              y={pt.y - 5}
+              y={pt.y - 4}
               textAnchor="middle"
               dominantBaseline="middle"
-              fill="#9ca3af"
-              fontSize="9"
+              fill="#6b7280"
+              fontSize="8.5"
               fontWeight="700"
-              letterSpacing="0.5"
+              letterSpacing="0.3"
             >
               {a.label.toUpperCase()}
             </text>
             <text
               x={pt.x}
-              y={pt.y + 7}
+              y={pt.y + 8}
               textAnchor="middle"
               dominantBaseline="middle"
               fill="#f97316"
