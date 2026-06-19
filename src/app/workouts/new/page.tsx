@@ -68,11 +68,13 @@ export default function NewWorkoutPage() {
     if (!name.trim()) return alert('Please enter a workout name.');
     if (movements.length === 0) return alert('Please add at least one movement.');
 
+    const workoutMovements = movements.map(({ key: _key, ...m }) => m);
     store.addWorkout({
       name: name.trim(),
       workoutType: type,
       description: description.trim() || undefined,
-      movements: movements.map(({ key: _key, ...m }) => m),
+      movements: workoutMovements,
+      segments: [],
       scoringMethod: SCORING_BY_TYPE[type],
       timeCapSeconds: timeCap ? parseInt(timeCap) * 60 : undefined,
       weightVestKg,

@@ -6,6 +6,7 @@ export const SAMPLE_WORKOUTS: Workout[] = [
     name: 'Fran',
     workoutType: 'ForTime',
     description: '21-15-9 reps of Thrusters (95/65 lb) and Pull-Ups',
+    segments: [],
     movements: [
       { movementId: 'thruster', reps: 21, loadKg: 43.1 },
       { movementId: 'pull-up', reps: 21 },
@@ -23,6 +24,7 @@ export const SAMPLE_WORKOUTS: Workout[] = [
     name: 'Helen',
     workoutType: 'ForTime',
     description: '3 rounds of: 400m Run, 21 KB Swings (53/35 lb), 12 Pull-Ups',
+    segments: [],
     movements: [
       { movementId: 'run', distanceMeters: 400 },
       { movementId: 'kettlebell-swing', reps: 21, loadKg: 24 },
@@ -37,6 +39,7 @@ export const SAMPLE_WORKOUTS: Workout[] = [
     name: 'Cindy',
     workoutType: 'AMRAP',
     description: '20 min AMRAP: 5 Pull-Ups, 10 Push-Ups, 15 Air Squats',
+    segments: [],
     movements: [
       { movementId: 'pull-up', reps: 5 },
       { movementId: 'push-up', reps: 10 },
@@ -51,6 +54,7 @@ export const SAMPLE_WORKOUTS: Workout[] = [
     name: 'Grace',
     workoutType: 'ForTime',
     description: '30 Clean and Jerks (135/95 lb) for time',
+    segments: [],
     movements: [
       { movementId: 'clean-and-jerk', reps: 30, loadKg: 61.2 },
     ],
@@ -64,6 +68,7 @@ export const SAMPLE_WORKOUTS: Workout[] = [
     workoutType: 'ForTime',
     description:
       '1 mile Run, 100 Pull-Ups, 200 Push-Ups, 300 Air Squats, 1 mile Run (with 20 lb vest)',
+    segments: [],
     movements: [
       { movementId: 'run', distanceMeters: 1609 },
       { movementId: 'pull-up', reps: 100 },

@@ -1,3 +1,38 @@
+## Prodigy Score System
+
+### Workout Structure
+
+Workouts are modeled with `segments` — an array of `WorkoutSegment` objects. Each segment has a `type` (ForTime, AMRAP, EMOM, MaxLoad, MaxReps, Rest), optional `rounds`, `repScheme` (e.g. [21,15,9] for Fran), `durationSeconds` (for AMRAP), and a `movements` list with per-movement prescriptions including separate male/female loads.
+
+The flat `movements` array on `Workout` is retained for backward compatibility with the UI.
+
+### Score Structure
+
+Each workout result produces:
+- **outputScore** (0–1000): Power output normalized logarithmically
+- **capacityScore** (0–1000): Work density × duration bonus
+- **skillScore** (0–1000): Skill-weighted movement complexity
+- **progressionScore** (0–1000): Improvement vs. personal history (500 = neutral)
+- **prodigyScore** (0–1000): Weighted composite = output×40% + capacity×30% + skill×20% + progression×10%
+
+### Scoring Limitations
+
+- Physics values are approximations (metabolic cost models, not instrumented measurement)
+- Bodyweight movements use fraction estimates (e.g. push-up = 65% BW)
+- Machine calories use 25% mechanical efficiency assumption
+- Running uses a metabolic cost of 3.5 J/kg/m (not pure mechanical work)
+- Progression score requires history — returns 500 (neutral) for first attempt
+
+### Next Steps
+
+- [ ] Real user accounts with persistent storage (Supabase)
+- [ ] Segment-aware score entry UI (per-segment result input)
+- [ ] Movement scaling library (scaled → RX progression paths)
+- [ ] Leaderboard / social comparison
+- [ ] Wearable integration for heart rate / power data
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
