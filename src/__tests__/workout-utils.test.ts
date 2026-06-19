@@ -1,40 +1,6 @@
 import { describe, it, expect } from 'vitest';
-<<<<<<< HEAD
-import { expandSegment, amrapScaleFactor, validateResultInput, totalRepsPerRound, resolveLoad } from '@/lib/workout-utils';
+import { expandSegment, expandWorkout, amrapScaleFactor, validateResultInput, totalRepsPerRound, resolveLoad } from '@/lib/workout-utils';
 import { SAMPLE_WORKOUTS } from '@/data/workouts';
-
-describe('amrapScaleFactor', () => {
-  it('returns completedRounds when no extra reps', () => {
-    expect(amrapScaleFactor(30, 5, 0)).toBe(5);
-  });
-  it('adds fractional round for extra reps', () => {
-    expect(amrapScaleFactor(30, 5, 15)).toBe(5.5);
-  });
-});
-
-describe('expandSegment - repScheme', () => {
-  it('Fran [21,15,9] produces 45 total reps per movement', () => {
-    const fran = SAMPLE_WORKOUTS.find(w => w.name === 'Fran')!;
-    const seg = fran.segments![0];
-    const instances = expandSegment(seg, { userSex: 'M' });
-    const thrusterReps = instances.filter(i => i.movementId === 'thruster').reduce((s, i) => s + i.reps, 0);
-    const pullupReps = instances.filter(i => i.movementId === 'pull-up').reduce((s, i) => s + i.reps, 0);
-    expect(thrusterReps).toBe(45);
-    expect(pullupReps).toBe(45);
-  });
-});
-
-describe('expandSegment - rounds', () => {
-  it('Helen 3 rounds produces 3x each movement', () => {
-    const helen = SAMPLE_WORKOUTS.find(w => w.name === 'Helen')!;
-    const seg = helen.segments![0];
-    const instances = expandSegment(seg, { userSex: 'M' });
-    const pullupReps = instances.filter(i => i.movementId === 'pull-up').reduce((s, i) => s + i.reps, 0);
-    expect(pullupReps).toBe(36); // 12 * 3
-    const totalDistance = instances.filter(i => i.movementId === 'run').reduce((s, i) => s + i.distanceMeters, 0);
-    expect(totalDistance).toBe(1200); // 400m * 3
-=======
-import { expandSegment, expandWorkout, amrapScaleFactor, validateResultInput } from '@/lib/workout-utils';
 import type { WorkoutSegment, Workout } from '@/types';
 
 describe('expandSegment — ForTime with repScheme [21,15,9]', () => {
@@ -79,6 +45,16 @@ describe('expandSegment — ForTime with repScheme [21,15,9]', () => {
     const thrusterInst = instances.find((i) => i.movementId === 'thruster');
     expect(thrusterInst?.loadKg).toBe(29);
   });
+
+  it('Fran [21,15,9] via SAMPLE_WORKOUTS produces 45 total reps per movement', () => {
+    const fran = SAMPLE_WORKOUTS.find(w => w.name === 'Fran')!;
+    const seg = fran.segments[0];
+    const instances = expandSegment(seg, { userSex: 'M' });
+    const thrusterReps = instances.filter(i => i.movementId === 'thruster').reduce((s, i) => s + i.reps, 0);
+    const pullupReps = instances.filter(i => i.movementId === 'pull-up').reduce((s, i) => s + i.reps, 0);
+    expect(thrusterReps).toBe(45);
+    expect(pullupReps).toBe(45);
+  });
 });
 
 describe('expandSegment — 3-round segment', () => {
@@ -104,6 +80,16 @@ describe('expandSegment — 3-round segment', () => {
       .reduce((s, i) => s + i.reps, 0);
     expect(pullUpReps).toBe(36);
   });
+
+  it('Helen 3 rounds via SAMPLE_WORKOUTS', () => {
+    const helen = SAMPLE_WORKOUTS.find(w => w.name === 'Helen')!;
+    const seg = helen.segments[0];
+    const instances = expandSegment(seg, { userSex: 'M' });
+    const pullupReps = instances.filter(i => i.movementId === 'pull-up').reduce((s, i) => s + i.reps, 0);
+    expect(pullupReps).toBe(36);
+    const totalDistance = instances.filter(i => i.movementId === 'run').reduce((s, i) => s + i.distanceMeters, 0);
+    expect(totalDistance).toBe(1200);
+  });
 });
 
 describe('amrapScaleFactor', () => {
@@ -113,21 +99,14 @@ describe('amrapScaleFactor', () => {
 
   it('amrapScaleFactor with 0 extra reps = completedRounds', () => {
     expect(amrapScaleFactor(30, 10, 0)).toBe(10);
->>>>>>> 6483ec7 (Refactor: explicit workout segments, per-movement prescriptions, corrected seed data, honest scoring engine)
+  });
+
+  it('returns completedRounds when no extra reps', () => {
+    expect(amrapScaleFactor(30, 5, 0)).toBe(5);
   });
 });
 
 describe('validateResultInput', () => {
-<<<<<<< HEAD
-  it('flags missing time for ForTime workout', () => {
-    const fran = SAMPLE_WORKOUTS.find(w => w.name === 'Fran')!;
-    const errors = validateResultInput(fran, {});
-    expect(errors.length).toBeGreaterThan(0);
-  });
-  it('passes with valid time', () => {
-    const fran = SAMPLE_WORKOUTS.find(w => w.name === 'Fran')!;
-    const errors = validateResultInput(fran, { timeSeconds: 240 });
-=======
   const forTimeWorkout: Workout = {
     id: 'test', name: 'Test', workoutType: 'ForTime', scoringMethod: 'Time',
     segments: [], movements: [], createdAt: '2024-01-01T00:00:00Z',
@@ -146,19 +125,31 @@ describe('validateResultInput', () => {
 
   it('no error when dnf is set for ForTime', () => {
     const errors = validateResultInput(forTimeWorkout, { dnf: true });
->>>>>>> 6483ec7 (Refactor: explicit workout segments, per-movement prescriptions, corrected seed data, honest scoring engine)
+    expect(errors).toHaveLength(0);
+  });
+
+  it('flags missing time via SAMPLE_WORKOUTS Fran', () => {
+    const fran = SAMPLE_WORKOUTS.find(w => w.name === 'Fran')!;
+    const errors = validateResultInput(fran, {});
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('passes with valid time via SAMPLE_WORKOUTS Fran', () => {
+    const fran = SAMPLE_WORKOUTS.find(w => w.name === 'Fran')!;
+    const errors = validateResultInput(fran, { timeSeconds: 240 });
     expect(errors).toHaveLength(0);
   });
 });
 
-<<<<<<< HEAD
 describe('resolveLoad', () => {
   it('returns male load for male athlete', () => {
     expect(resolveLoad({ movementId: 'thruster', loadKgMale: 43, loadKgFemale: 29 }, 'M')).toBe(43);
   });
   it('returns female load for female athlete', () => {
     expect(resolveLoad({ movementId: 'thruster', loadKgMale: 43, loadKgFemale: 29 }, 'F')).toBe(29);
-=======
+  });
+});
+
 describe('expandWorkout — Helen with rounds=3', () => {
   const helenWorkout: Workout = {
     id: 'helen',
@@ -188,6 +179,5 @@ describe('expandWorkout — Helen with rounds=3', () => {
     const runInstances = instances.filter((i) => i.movementId === 'run');
     expect(runInstances.length).toBe(3);
     runInstances.forEach((r) => expect(r.distanceMeters).toBe(400));
->>>>>>> 6483ec7 (Refactor: explicit workout segments, per-movement prescriptions, corrected seed data, honest scoring engine)
   });
 });
