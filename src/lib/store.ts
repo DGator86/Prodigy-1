@@ -5,6 +5,7 @@ import { SAMPLE_WORKOUTS } from '@/data/workouts';
 import { MOCK_USER } from '@/data/users';
 import { calculateScore } from '@/lib/scoring';
 import { MOVEMENTS } from '@/data/movements';
+import { movementsToSegment } from '@/lib/workout-utils';
 
 // ── Seed results ─────────────────────────────────────────────────────────────
 
@@ -105,8 +106,12 @@ export const store = {
   },
 
   addWorkout(workout: Omit<Workout, 'id' | 'createdAt'>): Workout {
+    const segments = workout.segments && workout.segments.length > 0
+      ? workout.segments
+      : [movementsToSegment(workout.movements, workout.workoutType)];
     const newWorkout: Workout = {
       ...workout,
+      segments,
       id: nextId(),
       createdAt: new Date().toISOString(),
     };

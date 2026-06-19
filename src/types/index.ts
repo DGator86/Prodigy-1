@@ -119,12 +119,47 @@ export interface WorkoutMovement {
   notes?: string;
 }
 
+export interface MovementPrescription {
+  movementId: string;
+  reps?: number;
+  distanceMeters?: number;
+  calories?: number;
+  loadKg?: number;
+  loadKgMale?: number;
+  loadKgFemale?: number;
+  durationSeconds?: number;
+  heightCm?: number;
+  watts?: number;
+}
+
+export interface WorkoutSegment {
+  label?: string;
+  type: WorkoutType;
+  rounds?: number;
+  durationSeconds?: number;
+  repScheme?: number[];   // e.g. [21,15,9]
+  movements: MovementPrescription[];
+  notes?: string;
+}
+
+export interface MovementResultOverride {
+  movementId: string;
+  segmentIndex?: number;
+  reps?: number;
+  loadKg?: number;
+  distanceMeters?: number;
+  calories?: number;
+  watts?: number;
+  timeSeconds?: number;
+}
+
 export interface Workout {
   id: string;
   name: string;
   workoutType: WorkoutType;
   description?: string;
   movements: WorkoutMovement[];
+  segments?: WorkoutSegment[];
   scoringMethod: ScoreType;
   timeCapSeconds?: number;
   weightVestKg?: number;
@@ -146,6 +181,10 @@ export interface WorkoutResultInput {
     distanceMeters?: number;
   }[];
   weightVestKg?: number;
+  rxStatus?: 'rx' | 'scaled' | 'modified';
+  dnf?: boolean;
+  timeCapHit?: boolean;
+  movementOverrides?: MovementResultOverride[];
 }
 
 export interface ScoreBreakdown {
@@ -169,6 +208,13 @@ export interface WorkoutResult {
   rawPowerWatts: number;
   scoreBreakdown: ScoreBreakdown[];
   completedAt: string;
+  rxStatus?: 'rx' | 'scaled' | 'modified';
+  dnf?: boolean;
+  timeCapHit?: boolean;
+  outputScore?: number;
+  skillScore?: number;
+  progressionScore?: number;
+  prodigyScore?: number;
 }
 
 export type ScoreLevel =
