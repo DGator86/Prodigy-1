@@ -16,6 +16,7 @@
 
 import { Movement, User, Workout, WorkoutResultInput, ScoreBreakdown } from '@/types';
 import { getMovementById } from '@/data/movements';
+import { expandWorkout } from '@/lib/workout-utils';
 
 const G = 9.81; // gravitational acceleration m/s²
 const KCAL_TO_JOULES = 4184;
@@ -210,45 +211,43 @@ export function calculateScore(params: {
   // Resolve time: use entered time or estimate from workout cap
   const timeSeconds = input.timeSeconds ?? workout.timeCapSeconds ?? 600;
 
+  const vestKg = input.weightVestKg ?? workout.weightVestKg ?? 0;
+  const effectiveBW = user.bodyweightKg + vestKg;
+
   let totalWorkJoules = 0;
   const breakdown: ScoreBreakdown[] = [];
 
-  // For AMRAP: scale movements by rounds completed
-  const amrapMultiplier =
-    workout.workoutType === 'AMRAP'
-      ? (input.rounds ?? 1) + (input.reps ?? 0) / getTotalRepsPerRound(workout)
-      : 1;
+  const instances = expandWorkout(workout, input, user.sex);
 
-  for (const wm of workout.movements) {
-    const movement = getMovementById(wm.movementId);
+  for (const inst of instances) {
+    const movement = getMovementById(inst.movementId);
     if (!movement) continue;
 
-    // Determine actual reps/load/distance for this movement instance
-    const reps = Math.round((wm.reps ?? 1) * amrapMultiplier);
-    const loadKg = wm.loadKg ?? 0;
-    const distMeters = wm.distanceMeters ?? 0;
-    const movTime = wm.timeSeconds ?? timeSeconds / workout.movements.length;
-    const cals = wm.calories ?? 0;
-    const watts = wm.watts ?? 0;
+    const movTime = inst.durationSeconds || timeSeconds / Math.max(instances.length, 1);
 
     const workJ = calcMovementWork({
       movement,
-      reps,
-      loadKg,
-      distanceMeters: distMeters,
+      reps: inst.reps,
+      loadKg: inst.loadKg,
+      distanceMeters: inst.distanceMeters,
       timeSeconds: movTime,
-      calories: cals,
-      watts,
-      bodyweightKg: user.bodyweightKg + (input.weightVestKg ?? workout.weightVestKg ?? 0),
+      calories: inst.calories,
+      watts: inst.watts,
+      bodyweightKg: effectiveBW,
     });
 
     totalWorkJoules += workJ;
-    breakdown.push({
-      movementName: movement.name,
-      workJoules: workJ,
-      skillCoefficient: movement.skillCoefficient,
-      contribution: workJ, // raw, normalized below
-    });
+    const existing = breakdown.find((b) => b.movementName === movement.name);
+    if (existing) {
+      existing.workJoules += workJ;
+    } else {
+      breakdown.push({
+        movementName: movement.name,
+        workJoules: workJ,
+        skillCoefficient: movement.skillCoefficient,
+        contribution: workJ,
+      });
+    }
   }
 
   // Normalize breakdown contributions to percentages
@@ -284,6 +283,3 @@ export function calculateScore(params: {
   };
 }
 
-function getTotalRepsPerRound(workout: Workout): number {
-  return workout.movements.reduce((s, m) => s + (m.reps ?? 0), 0) || 1;
-}

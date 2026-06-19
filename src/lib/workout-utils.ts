@@ -229,8 +229,14 @@ export function movementsToSegment(
   movements: import('@/types').WorkoutMovement[],
   type: WorkoutType
 ): import('@/types').WorkoutSegment {
+  const segType =
+    type === 'AMRAP' ? 'AMRAP'
+    : type === 'EMOM' ? 'EMOM'
+    : type === 'MaxLoad' ? 'MaxLoad'
+    : type === 'MaxReps' ? 'MaxReps'
+    : 'ForTime';
   return {
-    type,
+    type: segType,
     rounds: 1,
     movements: movements.map(m => ({
       movementId: m.movementId,

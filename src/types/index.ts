@@ -134,10 +134,10 @@ export interface MovementPrescription {
 
 export interface WorkoutSegment {
   label?: string;
-  type: WorkoutType;
+  type: 'ForTime' | 'AMRAP' | 'EMOM' | 'MaxLoad' | 'MaxReps' | 'Rest';
   rounds?: number;
   durationSeconds?: number;
-  repScheme?: number[];   // e.g. [21,15,9]
+  repScheme?: number[];
   movements: MovementPrescription[];
   notes?: string;
 }
@@ -158,8 +158,8 @@ export interface Workout {
   name: string;
   workoutType: WorkoutType;
   description?: string;
-  movements: WorkoutMovement[];
   segments?: WorkoutSegment[];
+  movements: WorkoutMovement[];
   scoringMethod: ScoreType;
   timeCapSeconds?: number;
   weightVestKg?: number;
